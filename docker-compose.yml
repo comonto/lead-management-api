@@ -1,0 +1,59 @@
+# docker-compose.yml
+version: '3.8' # Specifica la versione di Docker Compose
+
+services:
+  # Servizio per il database PostgreSQL
+  db:
+    image: postgres:13-alpine # Usa l'immagine ufficiale di PostgreSQL versione 13 (leggera alpine)
+    restart: always           # Riavvia il container se si ferma inaspettatamente
+    environment:
+      POSTGRES_DB: ${DB_NAME} # Nome del database, letto dal file .env
+      POSTGRES_USER: ${DB_USER} # Utente del database, letto dal file .env
+      POSTGRES_PASSWORD: ${DB_PASSWORD} # Password del database, letto dal file .env
+    ports:
+      - "5432:5432" # Mappa la porta 5432 del container alla porta 5432 della macchina host
+    volumes:
+      - pgdata:/var/lib/postgresql/data # Volume persistente per i dati del database
+    healthcheck: # Controlla la salute del database
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGUSER} -d ${POSTGRES_DB}"] # Comando per verificare che il DB sia pronto
+      interval: 5s # Controlla ogni 5 secondi
+      timeout: 5s # Timeout per il controllo
+      retries: 5 # Numero di tentativi prima di considerare il servizio non sano
+
+  # Servizio per l'applicativo Node.js (API)
+  app:
+    build: . # Costruisce l'immagine Docker dal Dockerfile presente nella directory corrente
+    # image: lead-management-api
+    restart: always # Riavvia il container se si ferma inaspettatamente
+    ports:
+      - "3000:3000" # Mappa la porta 3000 del container alla porta 3000 della macchina host
+    environment:
+      # Variabili d'ambiente passate all'applicativo, lette dal file .env
+      DB_HOST: db # L'hostname per il database è il nome del servizio Docker Compose 'db'
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      PORT: ${PORT}
+      NODE_ENV: development # Imposta l'ambiente (puoi cambiarlo in 'production' per il deploy)
+    depends_on:
+      db:
+        condition: service_healthy # Assicura che il servizio 'db' sia sano prima di avviare 'app'
+    # Volumes:
+    #   - .:/app # Decommenta questa riga in fase di sviluppo per il live-reloading (richiede nodemon nel container)
+    #   - /app/node_modules # Previene che node_modules venga sovrascritto dal mount
+    # Per un ambiente di produzione, puoi montare solo la directory 'dist' per un'immagine più piccola e sicura
+    volumes:
+      - ./dist:/app/dist # Monta la directory compilata per l'esecuzione
+      - ./data-source.ts:/app/data-source.ts # Necessario per le migrazioni
+      - ./src/migrations:/app/src/migrations # Necessario per le migrazioni
+
+    # Comando di avvio personalizzato: esegue le migrazioni e poi avvia il server
+    # Questo è utile per assicurare che lo schema del database sia aggiornato all'avvio del container dell'API
+    command: sh -c "npm run migration:run && npm run serve"
+    # Se preferisci avviare solo l'app senza migrazioni automatiche all'avvio del container:
+    # command: npm run serve
+
+# Volumi per la persistenza dei dati del database
+volumes:
+  pgdata: # Nome del volume per i dati di PostgreSQL
