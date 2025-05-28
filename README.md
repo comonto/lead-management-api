@@ -1,7 +1,7 @@
 # Crea la directory del progetto e navigaci all'interno
 mkdir lead-management-api
 cd lead-management-api
-
+#
 # Inizializza il progetto Node.js
 npm init -y
 
@@ -19,14 +19,17 @@ npm install class-validator class-transformer
 
 # Dipendenze di sviluppo (tipi TypeScript)
 npm install @types/express @types/pg @types/class-validator @types/class-transformer --save-dev
+
 #
 # Configurazione degli Integration Test
-## 1. Installazione delle Dipendenze
+## Installazione delle Dipendenze
 npm install jest supertest @types/jest @types/supertest ts-jest --save-dev
 - jest: Il framework di test più popolare per JavaScript/TypeScript.
 - supertest: Un'utility di testing HTTP che ti permette di fare richieste alla tua API come se fosse in esecuzione, senza doverla avviare su una porta.
 - @types/jest, @types/supertest: Tipi TypeScript per Jest e Supertest.
 - ts-jest: Un preset per Jest che permette di eseguire i test scritti in TypeScript.
+
+
 #
 # Docker
 ## Per avviare il Docker Compose
